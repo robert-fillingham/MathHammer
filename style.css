@@ -1,0 +1,25 @@
+P.special {
+color : green;
+border: solid red;
+}
+
+h1{
+color: gold;
+border: solid red;
+background-color: black;
+}
+
+input{
+  width: 75px;
+}
+
+.DMG{
+  width: 30px;
+  position: relative;
+  left: 52px;
+}
+
+.InPt{
+  position: absolute;
+  left: 100px
+}

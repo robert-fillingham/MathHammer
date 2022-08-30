@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js"></script>
+    <script src="./code/highcharts.js"></script>
+    <script src="./code/modules/series-label.js"></script>
+    <script src="./code/modules/exporting.js"></script>
+    
+    <style type="text/css"></style>
+  </head>
+
+  <body>
+    
+
+    <h1>Results Calc</h1>
+    <div id="container"></div>
+    <br>
+    <div id="container2"></div>
+    
+    <button onclick="addBlock();">AddBlock</button>
+    <div id="0">      
+      GroupName : <input type="text" id="LABEL0" class="InPt"><br>
+      Shots : <input type="text" id="SHOTS0" class="InPt"></br>
+      Skill : <input type="text" id="BS0" class="InPt"></br>
+      Str : <input type="text" id="STR0" class="InPt"></br>
+      AP : <input type="text" id="AP0" class="InPt"></br>
+      </br>
+      Target T : <input type="text" id="T0" class="InPt"></br>
+      Target Sv: <input type="text" id="SV0" class="InPt"></br>
+      
+
+
+        
+      <button onclick="getResults(0);">Calculate</button>
+      </br>
+      </br>
+      <div id="BasicHit0">Hit</div>
+      </br>
+      <div id="Wound0">Wound</div>
+      </br>
+      <div id="Unsaved0">Unsaved Wounds</div>
+      </br>
+    </div>
+    <div id="Breaker0">
+    </div>
+    
+    <script>
+
+      refreshTable();
+      var thingsAdded = 0;
+      var allResults = [];
+      allDMG = [];
+      allUnsaved = [];
+      thisOrBetter = [];
+      
+      var new_X = 300;
+      var new_Y = 922;
+      
+      function addBlock(){
+        thingsAdded++
+        //console.log(document.getElementById("Breaker0"));
+        //console.log(document.getElementById("Breaker0").outerHTML);
+        document.getElementById("Breaker"+(thingsAdded-1)).outerHTML += "<div id=\""+thingsAdded+"\">GroupName : <input type=\"text\" id=\"LABEL"+thingsAdded+"\" class=\"InPt\"><br>Shots : <input type=\"text\" id=\"SHOTS"+thingsAdded+"\" class=\"InPt\"></br>Skill : <input type=\"text\" id=\"BS"+thingsAdded+"\" class=\"InPt\"></br>Str : <input type=\"text\" id=\"STR"+thingsAdded+"\" class=\"InPt\"></br>AP : <input type=\"text\" id=\"AP"+thingsAdded+"\" class=\"InPt\"><br></br>Target T : <input type=\"text\" id=\"T"+thingsAdded+"\" class=\"InPt\"></br>Target Sv: <input type=\"text\" id=\"SV"+thingsAdded+"\" class=\"InPt\"></br><button onclick=\"getResults("+thingsAdded+");\">Calculate</button></br></br><div id=\"BasicHit"+thingsAdded+"\">Hit</div></br><div id=\"Wound"+thingsAdded+"\">Wound</div></br><div id=\"Unsaved"+thingsAdded+"\">Unsaved Wounds</div></br></div><div id=\"Breaker"+thingsAdded+"\">";
+        
+        moveNewDiv(thingsAdded);
+        
+        return null; 
+      }
+      
+      function moveNewDiv(id){
+         console.log("ID: " + id);
+         console.log("X: "+ new_X + ", Y: " + new_Y);
+         var div = document.getElementById(id);
+         div.style.position = "absolute";
+         div.style.left = new_X+'px';
+         div.style.top = new_Y+'px';
+         
+         update_X_Y()
+      }
+      
+      function update_X_Y(){
+          new_X = new_X + 300;
+          if (new_X > 900) {
+            new_X = 0;
+            new_Y = new_Y + 400
+          }
+          console.log("New X: " + new_X);
+      }
+
+      function getResults(id){
+        var SHOTS = document.getElementById("SHOTS"+id).value
+        var BS = document.getElementById("BS"+id).value
+        var STR = document.getElementById("STR"+id).value
+        var T = document.getElementById("T"+id).value
+        var SV = document.getElementById("SV"+id).value
+        var AP = document.getElementById("AP"+id).value
+        //var reults = [];
+        var results = Calc(SHOTS, BS, STR);
+        var DMG_results = CalcDamage(results, findWoundRate(STR, T));
+        var Unsaved = CalcDamage(DMG_results, findSave(AP, SV));
+
+        //document.getElementById("BasicHit"+id).innerHTML = "Hit<BR/><table id = \"BasicHit"+id+"\"><tr>"+tableBuilder(results);
+        //document.getElementById("Wound"+id).innerHTML = "Wound<BR/><table id = \"Wound"+id+"\">"+tableBuilder(DMG_results);
+        //document.getElementById("Unsaved"+id).innerHTML = "Unsaved Wound<BR/><table id = \"Unsaved"+id+"\">"+tableBuilder(Unsaved);
+        
+        allResults[id] = results;
+        allDMG[id] = DMG_results;
+        allUnsaved[id] = Unsaved;
+        thisOrBetter[id] = calcThisOrBetter(Unsaved);
+        refreshTable();
+      }
+      
+      function calcThisOrBetter(Unsaved){
+          //var temp1 = allUnsaved[id].split;
+          var temp2 = [];
+          for(var k = 0; k<Unsaved.length; k++){
+            temp2[k] = 0;
+          }
+          
+          temp2[0] = Unsaved[0];
+          //console.log("Temp2 before : " + temp2);
+          //console.log("Unsaved before : " + Unsaved);
+          
+          for(var i =1; i<Unsaved.length; i++){
+            //console.log("I-"+i+" - Value: "+temp2[i]);
+            for(var j=i; j<Unsaved.length; j++){
+              //console.log("J-"+j+" - Value: "+Unsaved[j]);
+              temp2[i] += Unsaved[j];
+            }
+          }
+          //console.log("Unsaved after : " + Unsaved);
+          //console.log(temp2);
+          return temp2;
+      }
+      
+      function tableBuilder(results, id){
+          var output = "";
+          for(var i = 0; i<=results.length-1; i++){
+            output=output +"<th>"+i+"</th><td>" + results[i].toFixed(4) + "</td>";
+            output=output+"</tr><tr>";
+          }
+          output=output + "</tr></table>";
+          return output;    
+      }
+      
+     function findWoundRate(str, t) {
+          if(str==t) return 3;
+          if(t <= (str/2)) return 5;
+          if(str <= (t/2)) return 1;
+          if(str>t) return 4;
+          if(str<t) return 2;
+          return 3;
+      }
+      
+      function findSave(AP, SV){
+        //If AP is not set, or is 0 (but not typed as an integer, set it to the integer 0
+        if(isNaN(AP)||AP == null||AP === undefined||AP==0){
+            AP=0;
+            console.log("A_AP : "+AP);
+        }
+        console.log("B_AP : "+AP);
+        
+        //If SV is not set, or is 0 (but not typed as an integer, set it to the integer 0
+        if(isNaN(SV)||SV == null||SV === undefined||SV==0){
+            SV=0;
+            console.log("A_SV : "+SV);            
+        }
+        console.log("B_AP : "+AP);
+        var ret = 0;
+        if(SV <= 0) {
+          ret = 6;
+        } else {
+          ret = (parseInt(SV)+parseInt(AP))-1;
+          if(ret < 0)ret = 0;
+          if(ret > 6) ret =6;
+        }
+        return ret;
+      }
+ ///////////////////////////////////////////////  
+     function refreshTable(){
+        var chart = declareChart();
+        var chart2 = declareChartTwo();
+        
+        for(var i = 0; i <= thingsAdded; i++){
+            chart.addSeries({
+                name: getLabelContent('LABEL', i), 
+                //data: allUnsaved[i]
+                data: thisOrBetter[i]
+            });
+        }
+        for(var i = 0; i <= thingsAdded; i++){
+            chart2.addSeries({
+                name: getLabelContent('LABEL', i), 
+                data: allUnsaved[i]
+                //data: thisOrBetter[i]
+            });
+        }        
+        
+     }
+     
+     function declareChart(){
+     var chart = Highcharts.chart('container', {
+          title: {
+            text: 'Math-Hammer - Cumulative'
+          },
+
+          subtitle: {
+            text: 'The numbers don\'t lie'
+          },
+
+          yAxis: {
+            title: {
+              text: 'Odds of Result'
+            }
+          },
+          legend: {
+            layout: 'vertical',
+            align: 'right',
+            verticalAlign: 'middle'
+          },
+
+          plotOptions: {
+            series: {
+              label: {
+                connectorAllowed: false
+              },
+              pointStart: 0
+            }
+          },
+          responsive: {
+            rules: [{
+              condition: {
+                maxWidth: 500
+              },
+              chartOptions: {
+                legend: {
+                  layout: 'horizontal',
+                  align: 'center',
+                  verticalAlign: 'bottom'
+                }
+              }
+            }]
+          }
+        });
+        return chart
+     }
+     
+     function declareChartTwo(){
+     var chart = Highcharts.chart('container2', {
+          title: {
+            text: 'Math-Hammer - Absolute'
+          },
+
+          subtitle: {
+            text: 'The numbers don\'t lie'
+          },
+
+          yAxis: {
+            title: {
+              text: 'Odds of Result'
+            }
+          },
+          legend: {
+            layout: 'vertical',
+            align: 'right',
+            verticalAlign: 'middle'
+          },
+
+          plotOptions: {
+            series: {
+              label: {
+                connectorAllowed: false
+              },
+              pointStart: 0
+            }
+          },
+          responsive: {
+            rules: [{
+              condition: {
+                maxWidth: 500
+              },
+              chartOptions: {
+                legend: {
+                  layout: 'horizontal',
+                  align: 'center',
+                  verticalAlign: 'bottom'
+                }
+              }
+            }]
+          }
+        });
+        return chart
+     }
+     
+     function getLabelContent(type, id){
+        var temp = document.getElementById(type+id);
+        return temp.value;
+     }
+    </script>
+  </body>
+</html>
